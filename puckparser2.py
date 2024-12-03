@@ -33,8 +33,6 @@ def getToken():
 def updateSymbolTable(name, type):
     if name not in symboltable:
         symboltable.update({name, type})
-    else:
-        raise TypeError("Already in symbol table")
     
 def checkSymbolTable(name):
     if symboltable[name] == "function":
@@ -456,7 +454,7 @@ initializeTokens(input_string)
 
 while token != "$":
     try:
-        parseStatementSequence()
+        parseDeclarationSequence()
         print("VALID")
         printSymbolTable()
         
