@@ -11,10 +11,11 @@ relations =  ['<', '>', '=', '#']
 addoperators = ['+', '-', 'OR', '&']
 muloperators = ['*', '/', 'AND', 'DIV', 'MOD']
 tokens = []
+symboltable = {}
 token = ''
 current_position = 0
 
-# Token Functions
+# Token and Symbol Table Functions
 def initializeTokens(input_string):
     global tokens, current_position
     tokens = input_string.split()
@@ -28,6 +29,25 @@ def getToken():
         current_position += 1
     else:
         token = "$"
+
+def updateSymbolTable(name, type):
+    if name not in symboltable:
+        symboltable.update({name, type})
+    else:
+        raise TypeError("Already in symbol table")
+    
+def checkSymbolTable(name):
+    if symboltable[name] == "function":
+        return "function"
+    elif symboltable[name] == "variable":
+        return "variable"
+    else:
+        raise TypeError("Not declared")
+
+def printSymbolTable():
+    print(f"Symbol Table : size {len(symboltable)}")
+    for key, value in symboltable.items():
+        print(f"{key}      {value}")
 
 # Bool Functions
 def isInteger(word):
@@ -194,15 +214,18 @@ def parseFactor():
         getToken()
         parseFactor()
     elif isIdentifier(token):
-        if True:
+        if checkSymbolTable(token) == "function":
             parseFunctionCall()
-        else:
+        elif checkSymbolTable(token) == "variable":
             parseDesignator()
+        else:
+            return TypeError("Not declared")
     else:
-        raise TypeError("Factor expected")
+        return TypeError("Identifier expected")
     
 def parseDesignator():
     if isIdentifier(token):
+        updateSymbolTable(token, "variable")
         getToken()
         while token == "^" or token == "[":
             parseSelector()
@@ -213,6 +236,7 @@ def parseSelector():
     if token == "^":
         getToken()
         if isIdentifier(token):
+            updateSymbolTable(token, "variable")
             getToken()
         else:
             raise TypeError("Identifier expected")
@@ -228,9 +252,11 @@ def parseSelector():
 
 def parseParamSequence():
     if isIdentifier(token):
+        updateSymbolTable(token, "variable")
         getToken()
         while token == ",":
             if token == "identifier":
+                updateSymbolTable(token, "variable")
                 getToken()
             else:
                 raise TypeError("Identifier expected")
@@ -343,7 +369,15 @@ def parseStatement():
     elif token == "LOOP":
         parseLoopStatement()
     elif isIdentifier(token):
-        parseAssignment()
+        if checkSymbolTable(token) == "function":
+            parseFunctionCall()
+        elif checkSymbolTable(token) == "variable":
+            parseDesignator()
+        else:
+            return TypeError("Not declared")
+    else:
+        return TypeError("Identifier expected")
+        
 
 def parseStatementSequence():
     parseStatement()
@@ -354,6 +388,7 @@ def parseFunctionDeclaration():
     if token == "DEF":
         getToken()
         if isIdentifier(token):
+            updateSymbolTable(token, "function")
             getToken()
             if token == "(":
                 getToken()
@@ -423,7 +458,9 @@ while token != "$":
     try:
         parseStatementSequence()
         print("VALID")
+        printSymbolTable()
+        
     except TypeError as e:
-        print("INVALID")
+        print("INVALID!")
         print(e)
         break
