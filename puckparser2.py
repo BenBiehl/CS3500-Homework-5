@@ -8,17 +8,17 @@
 # Shorthands and Definitions
 integers = '0123456789'
 relations =  ['<', '>', '=', '#']
-addoperators = ['+', '-', 'OR', '&']
-muloperators = ['*', '/', 'AND', 'DIV', 'MOD']
+add_operators = ['+', '-', 'OR', '&']
+mul_operators = ['*', '/', 'AND', 'DIV', 'MOD']
 tokens = []
-symboltable = {}
+symbol_table = {}
 token = ''
 current_position = 0
 
 # Token and Symbol Table Functions
-def initializeTokens(input_string):
+def initializeTokens(start_string):
     global tokens, current_position
-    tokens = input_string.split()
+    tokens = start_string.split()
     current_position = 0
     getToken()
 
@@ -30,21 +30,21 @@ def getToken():
     else:
         token = "$"
 
-def updateSymbolTable(name, type):
-    if name not in symboltable:
-        symboltable.update({name, type})
+def updateSymbolTable(name, value):
+    if name not in symbol_table:
+        symbol_table.update({name, value})
     
 def checkSymbolTable(name):
-    if symboltable[name] == "function":
+    if symbol_table[name] == "function":
         return "function"
-    elif symboltable[name] == "variable":
+    elif symbol_table[name] == "variable":
         return "variable"
     else:
         raise TypeError("Not declared")
 
 def printSymbolTable():
-    print(f"Symbol Table : size {len(symboltable)}")
-    for key, value in symboltable.items():
+    print(f"Symbol Table : size {len(symbol_table)}")
+    for key, value in symbol_table.items():
         print(f"{key}      {value}")
 
 # Bool Functions
@@ -133,7 +133,7 @@ def isString(word):
                 acc = True
             else:
                 return False
-        # If there's an closing '"', then if there are any more characters afterwards it's invalid
+        # If there's a closing parenthesis, then if there are any more characters afterward it's invalid
         elif state == 4:
             return False
     return acc
@@ -167,13 +167,13 @@ def isRelation(word):
         return False
     
 def isAddOperator(word):
-    if word in addoperators:
+    if word in add_operators:
         return True
     else:
         return False
     
 def isMulOperator(word):
-    if word in muloperators:
+    if word in mul_operators:
         return True
     else:
         return False
