@@ -1,14 +1,17 @@
 # Name: Benjamin Biehl
 import sys
+
 # Shorthands and Definitions
 integers = '0123456789'
 relations = ['<', '>', '=', '#']
 add_operators = ['+', '-', 'OR', '&']
 mul_operators = ['*', '/', 'AND', 'DIV', 'MOD']
+keywords = ["DEF", "RETURN", "DO", "LOOP", "POOL", "ELSE", "IF", "THEN", "FI"]
 tokens = []
 symbol_table = {}
 token = ''
 current_position = 0
+
 
 # Token and Symbol Table Functions
 def initializeTokens(start_string):
@@ -23,8 +26,6 @@ def getToken():
     if current_position < len(tokens):
         token = tokens[current_position]
         current_position += 1
-    else:
-        token = "$"
 
 
 def updateSymbolTable(name, value):
@@ -34,7 +35,8 @@ def updateSymbolTable(name, value):
 
 def printSymbolTable():
     for key, value in symbol_table.items():
-        print(f"{key}      {str(value)}")
+        print(f"{key}      {value}")
+
 
 # Bool Functions
 def isInteger(word):
@@ -131,6 +133,8 @@ def isString(word):
 
 
 def isIdentifier(word):
+    # if word in keywords:
+    # return False
     state = 1
     i = 0
     acc = False
@@ -173,6 +177,7 @@ def isMulOperator(word):
     else:
         return False
 
+
 # Parse Functions
 def parseExpression():
     parseSimpleExpression()
@@ -206,11 +211,17 @@ def parseFactor():
         else:
             raise TypeError("')' expected")
     elif token == "~":
-        print("Found '~'")
         getToken()
         parseFactor()
     elif isIdentifier(token):
-        getToken()
+        if token in symbol_table:
+            entry = symbol_table[token]
+            if entry["type"] == "function":
+                parseFunctionCall()
+            else:
+                parseDesignator()
+        else:
+            parseDesignator()
     else:
         raise TypeError("Identifier or literal expected")
 
@@ -245,10 +256,11 @@ def parseSelector():
 
 
 def parseParamSequence():
-    if isIdentifier(token):
+    if isIdentifier(token) and token not in keywords:
         updateSymbolTable(token, "variable")
         getToken()
         while token == ",":
+            getToken()
             if isIdentifier(token):
                 updateSymbolTable(token, "variable")
                 getToken()
@@ -260,16 +272,21 @@ def parseParamSequence():
 
 def parseFunctionCall():
     if isIdentifier(token):
+        function_name = token
         getToken()
         if token == "(":
-            if token == ")":
-                getToken()
-            elif isIdentifier(token):
+            getToken()
+            if token != ")":
                 parseParamSequence()
+                if token != ")":
+                    raise TypeError(") expected after parameter sequence")
+            getToken()
+            if token == ".":
+                getToken()
             else:
-                raise TypeError(") or Identifier expected")
+                raise TypeError(". expected after function call")
         else:
-            raise TypeError("( expected")
+            raise TypeError("( expected after function identifier")
     else:
         raise TypeError("Identifier expected")
 
@@ -281,8 +298,12 @@ def parseAssignment():
         parseExpression()
         if token == ".":
             getToken()
+        elif token == "(":
+            raise TypeError(f"Variable {token} used as a function")
         else:
             raise TypeError(". expected")
+    elif token == "(":
+        raise TypeError(f"Undefined function {token}")
     else:
         raise TypeError(":- expected")
 
@@ -321,16 +342,16 @@ def parseIfStatement():
                     getToken()
                     parseStatementSequence()
                 else:
-                    raise TypeError("THEN expected")
+                    raise TypeError("THEN expected after ELIF Expression")
+            if token == "ELSE":
+                getToken()
+                parseStatementSequence()
+            if token == "FI":
+                getToken()
+            else:
+                raise TypeError("FI expected to close IF statement")
         else:
-            raise TypeError("THEN expected")
-        if token == "ELSE":
-            getToken()
-            parseStatementSequence()
-        elif token == ".":
-            getToken()
-        else:
-            raise TypeError("FI expected")
+            raise TypeError("THEN expected after IF Expression")
     else:
         raise TypeError("IF expected")
 
@@ -354,6 +375,8 @@ def parseLoopStatement():
             raise TypeError("DO expected")
         if token == "POOL":
             getToken()
+            if token == ".":
+                getToken()
         else:
             raise TypeError("POOL expected")
     else:
@@ -367,18 +390,26 @@ def parseStatement():
         parseIfStatement()
     elif token == "LOOP":
         parseLoopStatement()
-    elif isIdentifier(token):
-        if token in symbol_table and symbol_table[token] == "function":
-            parseFunctionCall()
+    elif token == "RETURN":
+        parseReturnStatement()
+    elif isIdentifier(token) and token != "POOL" and token != "FI":
+        if token in symbol_table:
+            entry = symbol_table[token]
+            if entry["type"] == "function":
+                parseFunctionCall()
+            else:
+                parseAssignment()
         else:
             parseAssignment()
     else:
-        return TypeError("Identifier expected")
+        raise TypeError("Identifier expected")
 
 
 def parseStatementSequence():
     parseStatement()
     while token != "END.":
+        if token in keywords and token != "LOOP" and token != "IF" and token != "PRINT":
+            break
         parseStatement()
 
 
@@ -403,7 +434,7 @@ def parseFunctionDeclaration():
         else:
             raise TypeError("Identifier expected")
     else:
-        raise TypeError("DEF expected")
+        raise TypeError(f'Error: Function declaration expected, got "{token}".')
 
 
 def parseFunctionBody():
@@ -411,10 +442,8 @@ def parseFunctionBody():
         getToken()
     else:
         parseStatementSequence()
-        if token == "RETURN":
+        if token == "RETURN" or token == "END.":
             parseReturnStatement()
-        elif token == "END.":
-            getToken()
         else:
             raise TypeError("END. or RETURN expected")
 
@@ -444,21 +473,21 @@ def parseReturnStatement():
 
 def parseDeclarationSequence():
     parseFunctionDeclaration()
+    getToken()
     while token == "DEF":
         parseFunctionDeclaration()
+
 
 # Main Loop
 input_string = " ".join(line.strip() for line in sys.stdin)
 initializeTokens(input_string)
 print(tokens)
 
-while token != "$":
-    try:
-        parseDeclarationSequence()
-        print("VALID")
-        printSymbolTable()
+try:
+    parseDeclarationSequence()
+    print("VALID")
+    printSymbolTable()
 
-    except TypeError as e:
-        print("INVALID!")
-        print(e)
-        break
+except TypeError as e:
+    print("INVALID!")
+    print(e)

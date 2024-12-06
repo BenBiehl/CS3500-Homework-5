@@ -308,13 +308,6 @@ def parseFunctionCall():
 
             print(f"Found ) with token: {token}")
             getToken()  # Consume the ')'
-
-            # Expect a period '.' after the function call
-            if token == ".":
-                print(f"Found . with token: {token}")
-                getToken()  # Consume the period
-            else:
-                raise TypeError(". expected after function call")
         else:
             raise TypeError("( expected after function identifier")
     else:
@@ -429,9 +422,6 @@ def parseLoopStatement():
         if token == "POOL":
             print(f"Found POOL with token: {token}")
             getToken()
-            if token == ".":
-                print(f"Found . with token: {token}")
-                getToken()
         else:
             raise TypeError("POOL expected")
     else:
@@ -446,8 +436,6 @@ def parseStatement():
         parseIfStatement()
     elif token == "LOOP":
         parseLoopStatement()
-    #elif token == "RETURN":
-        #parseReturnStatement()
     elif isIdentifier(token) and token != "POOL" and token != "FI":
         if token in symbol_table:
             entry = symbol_table[token]
@@ -528,11 +516,6 @@ def parseReturnStatement():
                 if token == ")":
                     print(f"Found ) with token: {token}")
                     getToken()
-                    if token == ".":
-                        print(f"Found . with token: {token}")
-                        getToken()
-                    else:
-                        raise TypeError(". expected")
                 else:
                     raise TypeError(") expected")
             else:
