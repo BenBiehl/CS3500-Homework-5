@@ -35,7 +35,7 @@ def updateSymbolTable(name, value):
 
 def printSymbolTable():
     for key, value in symbol_table.items():
-        print(f"{key}      {value}")
+        print(f"{key} {value['type']}")
 
 
 # Bool Functions
@@ -281,10 +281,6 @@ def parseFunctionCall():
                 if token != ")":
                     raise TypeError(") expected after parameter sequence")
             getToken()
-            if token == ".":
-                getToken()
-            else:
-                raise TypeError(". expected after function call")
         else:
             raise TypeError("( expected after function identifier")
     else:
@@ -299,11 +295,11 @@ def parseAssignment():
         if token == ".":
             getToken()
         elif token == "(":
-            raise TypeError(f"Variable {token} used as a function")
+            raise TypeError(f'Variable "{token}" used as a function')
         else:
             raise TypeError(". expected")
     elif token == "(":
-        raise TypeError(f"Undefined function {token}")
+        raise TypeError(f'Undefined function "{token}".')
     else:
         raise TypeError(":- expected")
 
@@ -375,8 +371,6 @@ def parseLoopStatement():
             raise TypeError("DO expected")
         if token == "POOL":
             getToken()
-            if token == ".":
-                getToken()
         else:
             raise TypeError("POOL expected")
     else:
@@ -390,8 +384,6 @@ def parseStatement():
         parseIfStatement()
     elif token == "LOOP":
         parseLoopStatement()
-    elif token == "RETURN":
-        parseReturnStatement()
     elif isIdentifier(token) and token != "POOL" and token != "FI":
         if token in symbol_table:
             entry = symbol_table[token]
@@ -439,11 +431,13 @@ def parseFunctionDeclaration():
 
 def parseFunctionBody():
     if token == ";":
-        getToken()
+        return
     else:
         parseStatementSequence()
-        if token == "RETURN" or token == "END.":
+        if token == "RETURN":
             parseReturnStatement()
+        elif token == "END.":
+            return
         else:
             raise TypeError("END. or RETURN expected")
 
@@ -457,10 +451,6 @@ def parseReturnStatement():
                 getToken()
                 if token == ")":
                     getToken()
-                    if token == ".":
-                        getToken()
-                    else:
-                        raise TypeError(". expected")
                 else:
                     raise TypeError(") expected")
             else:
@@ -481,7 +471,6 @@ def parseDeclarationSequence():
 # Main Loop
 input_string = " ".join(line.strip() for line in sys.stdin)
 initializeTokens(input_string)
-print(tokens)
 
 try:
     parseDeclarationSequence()

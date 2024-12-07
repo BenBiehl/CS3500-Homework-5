@@ -35,7 +35,7 @@ def updateSymbolTable(name, value):
 def printSymbolTable():
     print(f"Symbol Table : size {len(symbol_table)}")
     for key, value in symbol_table.items():
-        print(f"{key}      {value}")
+        print(f"{key} {value['type']}")
 
 # Bool Functions
 def isInteger(word):

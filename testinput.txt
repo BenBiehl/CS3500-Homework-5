@@ -1,0 +1,5 @@
+DEF blah ( w )
+LOOP w > 0 DO
+  x :- w .
+  PRINT ( w ) .
+END.
